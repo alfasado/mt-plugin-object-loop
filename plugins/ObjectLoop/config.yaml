@@ -1,0 +1,17 @@
+name: ObjectLoop
+id:   ObjectLoop
+key:  objectloop
+author_name: Alfasado Inc.
+author_link: http://alfasado.net/
+description: Generic block tag MTObjectLoop.
+version: 0.1
+tags:
+    block:
+        ObjectLoop: $objectloop::ObjectLoop::Tags::_hdlr_object_loop
+        EntryLoop: $objectloop::ObjectLoop::Tags::_hdlr_object_loop
+        EntryModel: $objectloop::ObjectLoop::Tags::_hdlr_object_loop
+        CategoryModel: $objectloop::ObjectLoop::Tags::_hdlr_object_loop
+    filters:
+        EntryLoop:
+            filter_sample:
+                handler: $objectloop::ObjectLoop::Tags::_filter_sample
