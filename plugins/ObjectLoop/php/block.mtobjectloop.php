@@ -69,6 +69,11 @@ function smarty_block_mtobjectloop ( $args, $content, &$ctx, &$repeat ) {
         $where = '';
         $_blog_id;
         $field = array();
+        if ( isset( $args[ 'operator' ] ) ) $op = $args[ 'operator' ];
+        if (! $op ) {
+            $op = '=';
+        }
+        $ctx->mt->db()->escape( $op );
         foreach ( $args as $key => $value ) {
             if ( ( $key != '_object' ) && ( $key != '_datasource' ) ) {
                 if ( $_object->has_column( $key ) ) {
@@ -78,9 +83,19 @@ function smarty_block_mtobjectloop ( $args, $content, &$ctx, &$repeat ) {
                         }
                     }
                     if ( $where ) $where .= " AND ";
-                    $value = $ctx->mt->db()->escape( $value );
+                    if ( is_array( $value ) ) {
+                        $_value = array();
+                        foreach ( $value as $var ) {
+                            $var = $ctx->mt->db()->escape( $var );
+                            array_push( $_value, $var );
+                        }
+                        $vars = implode( ',', $_value );
+                        $where .= " ${_datasource}_$key in (${vars}) ";
+                    } else {
+                        $value = $ctx->mt->db()->escape( $value );
+                        $where .= " ${_datasource}_$key ${op} '${value}' ";
+                    }
                     if ( $key == 'blog_id' ) $_blog_id = $value;
-                    $where .= " ${_datasource}_$key='${value}' ";
                 }
             }
         }

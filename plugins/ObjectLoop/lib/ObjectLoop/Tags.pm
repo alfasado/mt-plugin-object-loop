@@ -27,9 +27,15 @@ sub _hdlr_object_loop {
     my $params = {};
     my $_blog_id;
     my %fields;
+    my $op = $args->{ operator } || '';
     for my $arg ( keys %$args ) {
         if ( $model->has_column( $arg ) ) {
-            $params->{ $arg } = $args->{ $arg };
+            my $value = $args->{ $arg };
+            if ( $op ) {
+                $params->{ $arg } = { $op => $value };
+            } else {
+                $params->{ $arg } = $value;
+            }
             if ( $arg eq 'blog_id' ) {
                 $_blog_id = $args->{ $arg };
             }
