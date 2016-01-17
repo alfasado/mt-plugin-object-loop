@@ -72,6 +72,10 @@ function smarty_block_mtobjectloop ( $args, $content, &$ctx, &$repeat ) {
         if ( isset( $args[ 'operator' ] ) ) $op = $args[ 'operator' ];
         if (! $op ) {
             $op = '=';
+        } else {
+            if ( $op == 'not_like' ) {
+                $op = 'not like';
+            }
         }
         $ctx->mt->db()->escape( $op );
         foreach ( $args as $key => $value ) {
@@ -93,7 +97,11 @@ function smarty_block_mtobjectloop ( $args, $content, &$ctx, &$repeat ) {
                         $where .= " ${_datasource}_$key in (${vars}) ";
                     } else {
                         $value = $ctx->mt->db()->escape( $value );
-                        $where .= " ${_datasource}_$key ${op} '${value}' ";
+                        if ( $key == 'class' ) {
+                            $where .= " ${_datasource}_$key = '${value}' ";
+                        } else {
+                            $where .= " ${_datasource}_$key ${op} '${value}' ";
+                        }
                     }
                     if ( $key == 'blog_id' ) $_blog_id = $value;
                 }
@@ -223,28 +231,34 @@ function smarty_block_mtobjectloop ( $args, $content, &$ctx, &$repeat ) {
     $lastn = count( $objects );
     $methods = array();
     $paths = array();
+    $blog_paths = array();
+    $ctx_blogs = array();
+    $blog = $ctx->stash( 'blog' );
+    $ctx_blogs[ $blog->id ] = $blog;
     if ( $_datasource == 'blog' ) {
         $methods = array( 'blog_site_path', 'blog_site_url',
         'blog_archive_path', 'blog_archive_url' );
     } else if ( $_datasource == 'asset' ) {
         $paths = array( 'asset_url', 'asset_file_path' );
-        $blog = $ctx->stash( 'blog' );
-        $site_url = $blog->site_url();
-        $site_url = preg_replace( '/\/$/', '', $site_url );
-        require_once( 'function.mtstaticwebpath.php' );
-        $static_url = smarty_function_mtstaticwebpath( $args, $ctx );
-        $archive_url = $blog->archive_url();
-        if ( $archive_url ) {
-            $archive_url = preg_replace( '/\/$/', '', $archive_url );
-        }
-        $site_path = $blog->site_path();
-        $site_path = preg_replace( '/\/$/', '', $site_path );
+        $blog_paths[ $blog->id ] = _objectloop_get_blog_paths( $blog, $args, $ctx );
     }
     if ( $counter < $lastn ) {
         $data = $objects[ $counter ];
         $values = $data->GetArray();
+        if ( $data->has_column( 'blog_id' ) ) {
+            $data_blog_id = $data->blog_id;
+            if ( $blog->id != $data_blog_id ) {
+                if (! isset ( $ctx_blogs[ $data_blog_id ] ) ) {
+                    $data_blog = $ctx->mt->db()->fetch_blog( $data_blog_id );
+                    $ctx_blogs[ $data_blog_id ] = $data_blog;
+                }
+                $ctx->stash( 'blog', $ctx_blogs[ $data_blog_id ] );
+            } else {
+                $ctx->stash( 'blog', $ctx_blogs[ $blog->id ] );
+            }
+        }
         if ( $data->has_meta() ) {
-            $meta = $data->get_meta_info()[ $_datasource ];
+            $meta = $data->get_meta_info( $_datasource );
             if ( is_array( $meta ) ) {
                 foreach ( $meta as $key => $value ) {
                     $field_name = $_datasource . '_' . str_replace( '.', '_', $key );
@@ -274,6 +288,16 @@ function smarty_block_mtobjectloop ( $args, $content, &$ctx, &$repeat ) {
                     $_key = preg_replace( '/.*?_/', '', $key );
                     $value = $data->$_key();
                 } else if ( in_array( $key, $paths ) ) {
+                    if (isset( $blog_paths[ $ctx->stash( 'blog' )->id ] ) ) {
+                        $_blog_paths = $blog_paths[ $ctx->stash( 'blog' )->id ];
+                    } else {
+                        $_blog_paths = _objectloop_get_blog_paths( $ctx->stash( 'blog' ), $args, $ctx );
+                        $blog_paths[ $ctx->stash( 'blog' )->id ] = $_blog_paths;
+                    }
+                    $static_url  = $_blog_paths[ 'static_url' ];
+                    $site_path   = $_blog_paths[ 'site_path' ];
+                    $site_url    = $_blog_paths[ 'site_url' ];
+                    $archive_url = $_blog_paths[ 'archive_url' ];
                     $value = preg_replace( '/^%s\//', $static_url, $value );
                     if ( $key == 'asset_file_path' ) {
                         $value = preg_replace( '/^%r/', $site_path, $value );
@@ -306,5 +330,24 @@ function smarty_block_mtobjectloop ( $args, $content, &$ctx, &$repeat ) {
         $repeat = FALSE;
     }
     return $content;
+}
+
+function _objectloop_get_blog_paths ( $blog, $args, $ctx ) {
+    $blog_paths = array();
+    $site_url = $blog->site_url();
+    $site_url = preg_replace( '/\/$/', '', $site_url );
+    $blog_paths[ 'site_url' ] = $site_url;
+    require_once( 'function.mtstaticwebpath.php' );
+    $static_url = smarty_function_mtstaticwebpath( $args, $ctx );
+    $blog_paths[ 'static_url' ] = $static_url;
+    $archive_url = $blog->archive_url();
+    if ( $archive_url ) {
+        $archive_url = preg_replace( '/\/$/', '', $archive_url );
+    }
+    $blog_paths[ 'archive_url' ] = $site_url;
+    $site_path = $blog->site_path();
+    $site_path = preg_replace( '/\/$/', '', $site_path );
+    $blog_paths[ 'site_path' ] = $site_path;
+    return $blog_paths;
 }
 ?>
