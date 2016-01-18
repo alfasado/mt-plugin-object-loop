@@ -90,7 +90,7 @@ sub _hdlr_object_loop {
                 }
             )
         ];
-        if (! $tags ) {
+        if (! scalar @$tags ) {
             return '';
         }
         my @tag_ids = map { $_->id, ( $_->n8d_id ? ( $_->n8d_id ) : () ) } @$tags;

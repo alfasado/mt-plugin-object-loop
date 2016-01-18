@@ -164,6 +164,8 @@ function smarty_block_mtobjectloop ( $args, $content, &$ctx, &$repeat ) {
                     $object_list = implode( ',', array_keys( $object_list ) );
                     if ( $where ) $where .= " AND ";
                     $where .= " ${_datasource}_id in (${object_list}) ";
+                } else {
+                    return '';
                 }
             }
         }
