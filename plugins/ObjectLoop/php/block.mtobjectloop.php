@@ -152,8 +152,10 @@ function smarty_block_mtobjectloop ( $args, $content, &$ctx, &$repeat ) {
                 foreach ( $tags as $tag ) {
                     $tag_list[] = $tag->tag_id;
                 }
-                $objecttag = $ctx->mt->db()->fetch_objecttags( array_merge( $blog_ctx_arg,
-                array( 'tag_id' => $tag_list, 'datasource' => $_datasource ) ) );
+                $tag_arg = $blog_ctx_arg;
+                $tag_arg[ 'tag_id' ] = $tag_list;
+                $tag_arg[ 'datasource' ] = $_datasource;
+                $objecttag = $ctx->mt->db()->fetch_objecttags( $tag_arg );
                 $object_list = array();
                 if ( $objecttag ) {
                     foreach ( $objecttag as $ot ) {
