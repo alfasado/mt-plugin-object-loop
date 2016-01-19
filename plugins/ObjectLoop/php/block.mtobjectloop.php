@@ -152,6 +152,11 @@ function smarty_block_mtobjectloop ( $args, $content, &$ctx, &$repeat ) {
                 foreach ( $tags as $tag ) {
                     $tag_list[] = $tag->tag_id;
                 }
+                if (! count( $tag_list ) ) {
+                    $ctx->restore( $localvars );
+                    $repeat = FALSE;
+                    return '';
+                }
                 $tag_arg = $blog_ctx_arg;
                 $tag_arg[ 'tag_id' ] = $tag_list;
                 $tag_arg[ 'datasource' ] = $_datasource;
@@ -167,8 +172,14 @@ function smarty_block_mtobjectloop ( $args, $content, &$ctx, &$repeat ) {
                     if ( $where ) $where .= " AND ";
                     $where .= " ${_datasource}_id in (${object_list}) ";
                 } else {
+                    $ctx->restore( $localvars );
+                    $repeat = FALSE;
                     return '';
                 }
+            } else {
+                $ctx->restore( $localvars );
+                $repeat = FALSE;
+                return '';
             }
         }
         if (! $where ) {
