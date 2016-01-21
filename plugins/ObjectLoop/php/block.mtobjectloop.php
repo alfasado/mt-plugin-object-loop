@@ -78,6 +78,7 @@ function smarty_block_mtobjectloop ( $args, $content, &$ctx, &$repeat ) {
             }
         }
         $ctx->mt->db()->escape( $op );
+        $class_type;
         foreach ( $args as $key => $value ) {
             if ( ( $key != '_object' ) && ( $key != '_datasource' ) ) {
                 if ( $_object->has_column( $key ) ) {
@@ -85,6 +86,7 @@ function smarty_block_mtobjectloop ( $args, $content, &$ctx, &$repeat ) {
                         if ( $value == '*' ) {
                             continue;
                         }
+                        $class_type = $value;
                     }
                     if ( $where ) $where .= " AND ";
                     if ( is_array( $value ) ) {
@@ -205,6 +207,34 @@ function smarty_block_mtobjectloop ( $args, $content, &$ctx, &$repeat ) {
             $meta_join_num = 1;
             if (! empty( $meta_info ) ) {
                 foreach ( $customfields as $name => $value ) {
+                    if (! isset( $meta_info[ 'field.' . $name ] ) ) {
+                        // TODO :: Asset Object
+                        if ( isset( $args[ 'column_def' ] ) && $args[ 'column_def' ] ) {
+                            $meta_info[ 'field.' . $name ] = $args[ 'column_def' ];
+                        } else {
+                            if ( $class_type ) {
+                                $basenames = array();
+                                foreach ( $customfields as $_name => $_value ) {
+                                    $_name = $ctx->mt->db()->escape( $_name );
+                                    $basenames[] = "'${_name}'";
+                                }
+                                global $customfield_types;
+                                require_once( 'class.mt_field.php' );
+                                $_field = new Field;
+                                $blog_ids = array( 0, $ctx->stash( 'blog' )->id );
+                                $blog_ids = implode( ',', $blog_ids );
+                                $basenames = implode( ',', $basenames );
+                                $name = $ctx->mt->db()->escape( $name );
+                                $field = $_field->Find( "field_blog_id in (${blog_ids}) AND field_basename in (${basenames})
+                                    AND field_obj_type='${class_type}'", FALSE, FALSE, array( 'limit' => 1 ) );
+                                if ( $field ) {
+                                    $field = $field[ 0 ];
+                                    $field = $customfield_types[ $field->field_type ];
+                                    $meta_info[ 'field.' . $name ] = $field[ 'column_def' ];
+                                }
+                            }
+                        }
+                    }
                     if ( isset( $meta_info[ 'field.' . $name ] ) ) {
                         $meta_col = $meta_info[ 'field.' . $name ];
                         $value = $ctx->mt->db()->escape( $value );
@@ -212,7 +242,7 @@ function smarty_block_mtobjectloop ( $args, $content, &$ctx, &$repeat ) {
                         $extras[ 'join' ][ $table ] = array(
                             'condition' => "(${_datasource}_meta${meta_join_num}.${_datasource}_meta_${_datasource}_id = ${_datasource}_id
                                 and ${_datasource}_meta$meta_join_num.${_datasource}_meta_type = 'field.$name'
-                                and ${_datasource}_meta$meta_join_num.${_datasource}_meta_$meta_col='${value}')\n"
+                                and ${_datasource}_meta$meta_join_num.${_datasource}_meta_$meta_col = '${value}')\n"
                         );
                         $meta_join_num++;
                     }
@@ -230,6 +260,9 @@ function smarty_block_mtobjectloop ( $args, $content, &$ctx, &$repeat ) {
             $where = $ctx->stash( 'filter_where' );
             $extras = $ctx->stash( 'filter_extras' );
             $args = $ctx->stash( 'filter_args' );
+        }
+        if ( ( isset( $args[ 'debug' ] ) ) && $args[ 'debug' ] ) {
+            echo htmlspecialchars( $where );
         }
         $objects = $_object->Find( $where, FALSE, FALSE, $extras );
         $counter = 0;
