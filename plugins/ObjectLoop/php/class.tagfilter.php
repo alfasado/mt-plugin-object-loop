@@ -7,12 +7,17 @@ class TagFilter
             $filter_dir = $dir . DIRECTORY_SEPARATOR . 'tagfilter';
             if ( is_dir( $filter_dir ) ) {
                 $dirs = explode( DIRECTORY_SEPARATOR, $filter_dir );
-                $plugin = strtolower( $dirs[ count( $dirs ) - 3 ] );
+                $plugin_id = $dirs[ count( $dirs ) - 3 ];
+                $plugin = strtolower( $plugin_id );
                 $function = $plugin . '_' . $callback;
-                $require = $filter_dir . DIRECTORY_SEPARATOR . $function . '.php';
+                $require =  $filter_dir . DIRECTORY_SEPARATOR . 'class.' .$plugin . '_tag_filter.php';
                 if ( file_exists( $require ) ) {
-                    require_once $require;
-                    $res = $function( $mt, $ctx, $args, $content );
+                    require_once ( $require );
+                    $classname = $plugin_id . 'TagFilter';
+                    $class = new $classname;
+                    if ( method_exists( $class, $callback ) ) { 
+                        $res = $class->$callback( $mt, $ctx, $args, $content );
+                    }
                 }
             }
         }

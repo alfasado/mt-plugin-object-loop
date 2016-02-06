@@ -143,6 +143,12 @@ sub _hdlr_object_loop {
         }
     }
     my @objects = $model->load( $params, $extras );
+    if ( $args->{ 'shuffle' } ) {
+        eval "require List::Util;";
+        unless ( $@ ) {
+            @objects = List::Util::shuffle( @objects );
+        }
+    }
     my $tokens = $ctx->stash( 'tokens' );
     my $builder = $ctx->stash( 'builder' );
     my $vars = $ctx->{ __stash }{ vars } ||= {};

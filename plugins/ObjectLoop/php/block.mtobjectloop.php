@@ -265,6 +265,9 @@ function smarty_block_mtobjectloop ( $args, $content, &$ctx, &$repeat ) {
             echo htmlspecialchars( $where );
         }
         $objects = $_object->Find( $where, FALSE, FALSE, $extras );
+        if ( ( isset( $args[ 'shuffle' ] ) ) && $args[ 'shuffle' ] ) {
+            shuffle( $objects );
+        }
         $counter = 0;
         $ctx->stash( $_datasource . '_multi', $objects );
     } else {
