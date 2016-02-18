@@ -223,4 +223,21 @@ sub _filter_sample {
     # Do Someting
 }
 
+sub _entry_asset_filter {
+    my ( $ctx ) = @_;
+    my $terms = $ctx->{ terms };
+    my $args = $ctx->{ args };
+    my $entry = $ctx->stash( 'entry' );
+    if (! $entry ) {
+        return;
+    }
+    $args->{ join } = MT->model( 'objectasset' )->join_on(
+                        undef,
+                        {   asset_id  => \'= asset_id',
+                            object_ds => $entry->datasource,
+                            object_id => $entry->id
+                        }
+                    );
+}
+
 1;
